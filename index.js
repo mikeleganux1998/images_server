@@ -6,7 +6,7 @@ const express = require('express'); // Framework para crear aplicaciones web en 
 const multer = require('multer'); // Middleware para manejar la subida de archivos
 const mongoose = require('mongoose'); // Librería para interactuar con MongoDB
 const path = require('path'); // Módulo para manejar y transformar rutas de archivos y directorios
-const File = require('./models/files.model'); // Importar el modelo de archivo definido en './models/files.model'
+const fileModel = require('./models/files.model'); // Importar el modelo de archivo definido en './models/files.model'
 const app = express(); // Crear una instancia de la aplicación Express
 const port = 3007; // Puerto en el que se ejecutará el servidor Express
 const cors = require('cors'); // Middleware para habilitar CORS (Cross-Origin Resource Sharing)
@@ -37,7 +37,7 @@ if (process.env.PRODUCTION) {
 }
 
 
-const upload = multer({ storage: storage }); // Configurar multer con la opción de almacenamiento definida
+const upload = multer({storage: storage}); // Configurar multer con la opción de almacenamiento definida
 
 // Ruta para subir archivos mediante POST
 app.post('/api/upload', upload.single('file'), async (req, res) => {
@@ -48,27 +48,36 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         // Construir la URL pública del archivo subido
         let url
         if (process.env.PRODUCTION) {
-             url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
-        }else{
-             url = `https://${process.env.URL_HOST}/files_dev/${req.file.filename}`;
+            url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
+        } else {
+            url = `https://${process.env.URL_HOST}/files_dev/${req.file.filename}`;
         }
 
 
         // Guardar la información del archivo en MongoDB utilizando el modelo definido
-        const newFile = new File({
+        const newFile = fileModel.create({
             filename: req.file.filename, // Nombre original del archivo
             path: req.file.path, // Ruta local donde se guarda el archivo en el servidor
             url: url // URL pública del archivo generado
         });
 
-        await newFile.save(); // Guardar el archivo en la base de datos MongoDB
+        //await newFile.save(); // Guardar el archivo en la base de datos MongoDB
 
         // Devolver la URL pública del archivo subido como respuesta
-        res.json({ url: url });
+        res.status(200).json({
+            success: true,
+            url: url
+        })
+
     } catch (err) {
         // Manejar errores en caso de fallo al guardar el archivo en MongoDB
         console.error('Error al guardar el archivo en MongoDB:', err);
-        res.status(500).json({ error: 'Error al subir el archivo' }); // Devolver código de error 500 y mensaje JSON de error
+        res.status(500).json({
+            success: false,
+
+            error: err
+        })
+
     }
 });
 
