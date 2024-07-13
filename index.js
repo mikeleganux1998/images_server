@@ -46,7 +46,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     try {
         // Construir la URL pública del archivo subido
-        const url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
+        let url
+        if (process.env.PRODUCTION) {
+             url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
+        }else{
+             url = `https://${process.env.URL_HOST}/files_dev/${req.file.filename}`;
+        }
+
 
         // Guardar la información del archivo en MongoDB utilizando el modelo definido
         const newFile = new File({
