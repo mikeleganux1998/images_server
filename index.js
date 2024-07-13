@@ -47,7 +47,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     try {
         // Construir la URL pública del archivo subido
         let url
-        if (process.env.PRODUCTION) {
+        if (process.env.PRODUCTION==='true') {
             url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
         } else {
             url = `https://${process.env.URL_HOST}/files_dev/${req.file.filename}`;
