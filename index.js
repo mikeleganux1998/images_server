@@ -24,7 +24,8 @@ if (process.env.PRODUCTION==='true') {
         filename: function (req, file, cb) {
             cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo
         }
-    });
+    })
+    app.use('/files', express.static('files'));
 } else {
     storage = multer.diskStorage({
         destination: function (req, file, cb) {
@@ -34,6 +35,7 @@ if (process.env.PRODUCTION==='true') {
             cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo
         }
     });
+    app.use('/files_dev', express.static('files_dev'));
 }
 
 
@@ -48,9 +50,9 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
         // Construir la URL pública del archivo subido
         let url
         if (process.env.PRODUCTION==='true') {
-            url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
+            url = `${process.env.URL_HOST}/files/${req.file.filename}`;
         } else {
-            url = `https://${process.env.URL_HOST}/files_dev/${req.file.filename}`;
+            url = `${process.env.URL_HOST}/files_dev/${req.file.filename}`;
         }
 
 
