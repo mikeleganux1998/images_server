@@ -15,14 +15,27 @@ const cors = require('cors'); // Middleware para habilitar CORS (Cross-Origin Re
 app.use(cors());
 
 // Configuración de multer para manejar la subida de archivos
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './files'); // Directorio donde se guardarán los archivos subidos
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo (se añade un timestamp para evitar nombres duplicados)
-    }
-});
+let storage;
+if (process.env.PRODUCTION) {
+    storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, './files'); // Directorio de producción
+        },
+        filename: function (req, file, cb) {
+            cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo
+        }
+    });
+} else {
+    storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, './files_dev'); // Directorio de desarrollo
+        },
+        filename: function (req, file, cb) {
+            cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo
+        }
+    });
+}
+
 
 const upload = multer({ storage: storage }); // Configurar multer con la opción de almacenamiento definida
 
@@ -32,23 +45,27 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     console.log('Petición recibida para subir archivo:', req.file);
 
     try {
+        // Construir la URL pública del archivo subido
+        const url = `https://${process.env.URL_HOST}/files/${req.file.filename}`;
+
         // Guardar la información del archivo en MongoDB utilizando el modelo definido
         const newFile = new File({
             filename: req.file.filename, // Nombre original del archivo
             path: req.file.path, // Ruta local donde se guarda el archivo en el servidor
-            url: `https://${process.env.URL_HOST}/files/${req.file.filename}` // URL pública del archivo generado
+            url: url // URL pública del archivo generado
         });
 
         await newFile.save(); // Guardar el archivo en la base de datos MongoDB
 
         // Devolver la URL pública del archivo subido como respuesta
-        res.json({ url: newFile.url });
+        res.json({ url: url });
     } catch (err) {
         // Manejar errores en caso de fallo al guardar el archivo en MongoDB
         console.error('Error al guardar el archivo en MongoDB:', err);
         res.status(500).json({ error: 'Error al subir el archivo' }); // Devolver código de error 500 y mensaje JSON de error
     }
 });
+
 
 // Iniciar el servidor Express y escuchar peticiones en el puerto especificado
 app.listen(port, () => {
