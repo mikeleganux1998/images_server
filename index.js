@@ -16,7 +16,7 @@ app.use(cors());
 
 // Configuración de multer para manejar la subida de archivos
 let storage;
-if (process.env.PRODUCTION) {
+if (process.env.PRODUCTION==='true') {
     storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, './files'); // Directorio de producción
