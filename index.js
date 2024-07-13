@@ -10,7 +10,7 @@ const fileModel = require('./models/files.model'); // Importar el modelo de arch
 const app = express(); // Crear una instancia de la aplicación Express
 const port = 3007; // Puerto en el que se ejecutará el servidor Express
 const cors = require('cors'); // Middleware para habilitar CORS (Cross-Origin Resource Sharing)
-
+const db = require('./conf/db')
 // Configurar CORS para permitir peticiones desde cualquier origen
 app.use(cors());
 
