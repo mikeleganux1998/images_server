@@ -2,21 +2,20 @@
 require('dotenv').config();
 
 // Importar las dependencias necesarias
-const express = require('express'); // Framework para crear aplicaciones web en Node.js
-const multer = require('multer'); // Middleware para manejar la subida de archivos
-const mongoose = require('mongoose'); // Librería para interactuar con MongoDB
-const path = require('path'); // Módulo para manejar y transformar rutas de archivos y directorios
-const fileModel = require('./models/files.model'); // Importar el modelo de archivo definido en './models/files.model'
-const app = express(); // Crear una instancia de la aplicación Express
-const port = 3007; // Puerto en el que se ejecutará el servidor Express
-const cors = require('cors'); // Middleware para habilitar CORS (Cross-Origin Resource Sharing)
-const db = require('./conf/db')
-// Configurar CORS para permitir peticiones desde cualquier origen
+const express = require('express');
+const multer = require('multer');
+const mongoose = require('mongoose');
+const path = require('path');
+const fileModel = require('./models/files.model');
+const app = express();
+const port = 3007;
+const cors = require('cors');
+const db = require('./conf/db');
 app.use(cors());
 
-// Configuración de multer para manejar la subida de archivos
+// Configuración de multer para manejar la subida de archivos sin restricciones
 let storage;
-if (process.env.PRODUCTION==='true') {
+if (process.env.PRODUCTION === 'true') {
     storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, './files'); // Directorio de producción
@@ -24,7 +23,7 @@ if (process.env.PRODUCTION==='true') {
         filename: function (req, file, cb) {
             cb(null, Date.now() + '-' + file.originalname); // Nombre del archivo
         }
-    })
+    });
     app.use('/files', express.static('files'));
 } else {
     storage = multer.diskStorage({
@@ -38,8 +37,10 @@ if (process.env.PRODUCTION==='true') {
     app.use('/files_dev', express.static('files_dev'));
 }
 
-
-const upload = multer({storage: storage}); // Configurar multer con la opción de almacenamiento definida
+// Configurar multer sin restricciones de tipo de archivo
+const upload = multer({
+    storage: storage
+});
 
 // Ruta para subir archivos mediante POST
 app.post('/api/upload', upload.single('file'), async (req, res) => {
@@ -48,41 +49,36 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     try {
         // Construir la URL pública del archivo subido
-        let url
-        if (process.env.PRODUCTION==='true') {
+        let url;
+        if (process.env.PRODUCTION === 'true') {
             url = `${process.env.URL_HOST}/files/${req.file.filename}`;
         } else {
             url = `${process.env.URL_HOST}/files_dev/${req.file.filename}`;
         }
 
-
         // Guardar la información del archivo en MongoDB utilizando el modelo definido
-        const newFile = fileModel.create({
+        const newFile = await fileModel.create({
             filename: req.file.filename, // Nombre original del archivo
             path: req.file.path, // Ruta local donde se guarda el archivo en el servidor
-            url: url // URL pública del archivo generado
+            url: url, // URL pública del archivo generado
+            mimetype: req.file.mimetype // Tipo de archivo
         });
-
-        //await newFile.save(); // Guardar el archivo en la base de datos MongoDB
 
         // Devolver la URL pública del archivo subido como respuesta
         res.status(200).json({
             success: true,
             url: url
-        })
+        });
 
     } catch (err) {
         // Manejar errores en caso de fallo al guardar el archivo en MongoDB
         console.error('Error al guardar el archivo en MongoDB:', err);
         res.status(500).json({
             success: false,
-
             error: err
-        })
-
+        });
     }
 });
-
 
 // Iniciar el servidor Express y escuchar peticiones en el puerto especificado
 app.listen(port, () => {
